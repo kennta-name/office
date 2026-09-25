@@ -204,6 +204,8 @@
   }
 
   // ================================================================ トップ画面
+  let practiceRequest = null; // ショートカット一覧から「練習する」で来たときの問題ID
+
   function renderHome() {
     const state = Store.state;
     const prefs = state.prefs;
@@ -213,6 +215,9 @@
     const favCount = Object.values(state.questions).filter(r => r.favorite).length;
     const accuracy = profile.totalAnswered ? Math.round(profile.correct / profile.totalAnswered * 100) : null;
     const session = validSession();
+    const choiceCount = Bank.list.filter(q => q.type === 'choice').length;
+    const inputCount = Bank.list.filter(q => q.type === 'input').length;
+    const ticks = Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.floor(lp.ratio * 10) ? 'on' : ''}"></i>`).join('');
 
     const seg = (name, value, label, checked) =>
       `<label class="seg"><input type="radio" name="${name}" value="${value}" ${checked ? 'checked' : ''}><span>${label}</span></label>`;
@@ -220,15 +225,19 @@
     const html = `
     <section class="home">
       <div class="home-top">
-        <div class="level-card" aria-label="現在のレベル">
-          <div class="lv-head">
-            <div class="lv-badge"><small>LEVEL</small><b>${lp.level}</b></div>
-            <div class="lv-meta">
-              <p class="lv-title">${esc(Game.levelTitle(lp.level))}</p>
-              <p class="lv-sub">累計 <b>${fmt(profile.totalXP)}</b> pt ・ 次のレベルまで <b>${fmt(lp.toNext)}</b> pt</p>
-            </div>
+        <div class="hero-copy">
+          <p class="kicker">Office ショートカットと用語の稽古場</p>
+          <h1>押して覚える、<br>Officeキー道場</h1>
+          <p class="lead">選択式 ${choiceCount}問・入力式 ${inputCount}問。入力式は、実際に <span class="keys inline"><kbd>Ctrl</kbd><span class="plus">+</span><kbd>C</kbd></span> を押して答えます。</p>
+          <a class="site-link" href="shortcuts.html">ショートカット一覧で予習する<span aria-hidden="true">→</span></a>
+        </div>
+        <div class="rank-card" aria-label="現在のレベル">
+          <div class="rank-head">
+            <p class="rank-lv"><small>レベル</small><b>${lp.level}</b></p>
+            <p class="rank-title">${esc(Game.levelTitle(lp.level))}</p>
           </div>
-          <div class="xp-bar" role="progressbar" aria-label="次のレベルまでの進み具合" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(lp.ratio * 100)}"><span style="--w:${(lp.ratio * 100).toFixed(1)}%"></span></div>
+          <div class="rank-ticks" role="progressbar" aria-label="次のレベルまでの進み具合" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(lp.ratio * 100)}">${ticks}</div>
+          <p class="rank-sub">累計 <b>${fmt(profile.totalXP)}</b> pt ／ 次のレベルまで <b>${fmt(lp.toNext)}</b> pt</p>
           <dl class="mini-stats">
             <div><dt>正答率</dt><dd>${accuracy == null ? '—' : accuracy + '<small>%</small>'}</dd></div>
             <div><dt>最大コンボ</dt><dd>${fmt(profile.maxCombo)}</dd></div>
@@ -236,21 +245,30 @@
             <div><dt>お気に入り</dt><dd>${favCount}<small>問</small></dd></div>
           </dl>
         </div>
-        <div class="hero-copy">
-          <p class="eyebrow">Office ショートカット＆用語トレーニング</p>
-          <h1>押して覚える、<br>Officeキー道場。</h1>
-          <p class="lead">選択式 ${Bank.list.filter(q => q.type === 'choice').length}問・入力式 ${Bank.list.filter(q => q.type === 'input').length}問。入力式は、実際に <span class="keys inline"><kbd>Ctrl</kbd><span class="plus">+</span><kbd>C</kbd></span> を押して答えます。</p>
-        </div>
       </div>
 
-      ${session ? `
-      <div class="resume-card" id="resume-card">
+      ${practiceRequest ? `
+      <div class="notice-card practice-card" id="practice-card">
         <div>
-          <p class="resume-label">前回の続き</p>
-          <p class="resume-main">問 <b>${session.index + (session.phase === 'answered' ? 2 : 1) > session.queue.length ? session.queue.length : session.index + (session.phase === 'answered' ? 2 : 1)}</b> / ${session.queue.length} ・ ${fmt(session.score)} pt ・ ${session.combo} コンボ中</p>
+          <p class="notice-label">ショートカット一覧から</p>
+          <p class="notice-main">選んだショートカットの問題を <b>${practiceRequest.length}問</b> 練習できます</p>
+          ${session ? '<p class="notice-sub">はじめると、途中の挑戦は新しい挑戦に置き換わります。</p>' : ''}
         </div>
-        <div class="resume-actions">
-          <button class="btn primary" data-action="resume">前回の続きから</button>
+        <div class="notice-actions">
+          <button class="btn primary" data-action="practice">練習をはじめる</button>
+          <button class="btn ghost" data-action="practice-cancel">やめる</button>
+        </div>
+      </div>` : ''}
+
+      ${session ? `
+      <div class="notice-card resume-card" id="resume-card">
+        <div>
+          <p class="notice-label">途中の挑戦があります</p>
+          <p class="notice-main">第 <b>${Math.min(session.index + 1, session.queue.length)}</b> 問 ／ 全${session.queue.length}問 ・ ${fmt(session.score)} pt ・ ${session.combo} コンボ中</p>
+          <p class="notice-sub">${session.phase === 'answered' ? '回答済みの問題の解説から再開します。' : '中断した問題から再開します。'}</p>
+        </div>
+        <div class="notice-actions">
+          <button class="btn primary" data-action="resume">続きから再開</button>
           <button class="btn ghost" data-action="discard">破棄する</button>
         </div>
         <div class="confirm" id="discard-confirm" hidden>
@@ -261,10 +279,10 @@
       </div>` : ''}
 
       <form class="setup" id="setup-form" novalidate>
-        <h2>挑戦の設定</h2>
+        <h2 class="sec-h">稽古の設定</h2>
         <fieldset>
           <legend>出題数</legend>
-          <div class="segs">${[5, 10, 20, 'all'].map(c => seg('count', c, c === 'all' ? '全問' : c + '問', String(prefs.count) === String(c))).join('')}</div>
+          <div class="segs count">${[5, 10, 20, 30, 40, 50, 'all'].map(c => seg('count', c, c === 'all' ? '全問' : c + '問', String(prefs.count) === String(c))).join('')}</div>
         </fieldset>
         <fieldset>
           <legend>出題形式</legend>
@@ -289,13 +307,17 @@
           </label>
         </div>
         <p class="pool-note" id="pool-note" aria-live="polite"></p>
-        <button class="btn primary xl" type="submit" id="start-btn">スタート</button>
+        <button class="btn primary xl" type="submit" id="start-btn">稽古をはじめる</button>
       </form>
 
-      <section class="howto" aria-label="遊び方">
-        <div><b>1</b><p>正解すると難易度に応じて <strong>EASY 50 / NORMAL 100 / HARD 200 pt</strong></p></div>
-        <div><b>2</b><p>連続正解で<strong>コンボボーナス</strong>。2連続で+10%、最大+100%</p></div>
-        <div><b>3</b><p>間違えた問題は<strong>苦手問題</strong>に自動登録。2回続けて正解すると克服</p></div>
+      <section class="howto" aria-label="ルール">
+        <h2 class="sec-h">ルール</h2>
+        <dl>
+          <div><dt>得点</dt><dd>正解すると EASY 50 ／ NORMAL 100 ／ HARD 200 pt。</dd></div>
+          <div><dt>コンボ</dt><dd>連続正解でボーナス。2連続で +10%、最大 +100%。</dd></div>
+          <div><dt>段位</dt><dd>累計ポイントでレベルが上がり、十級から初段、そして名人へ。</dd></div>
+          <div><dt>苦手</dt><dd>間違えた問題は自動で登録。2回続けて正解すると克服。</dd></div>
+        </dl>
       </section>
       ${Bank.skipped ? `<p class="data-warning">問題データの一部に不備があったため、${Bank.skipped}問を除外して表示しています。</p>` : ''}
     </section>`;
@@ -326,7 +348,8 @@
         btn.disabled = true;
       } else {
         const n = config.count === 'all' ? pool.length : Math.min(pool.length, config.count);
-        note.textContent = `条件に合う問題 ${pool.length}問 から ${n}問 を出題します`;
+        const short = config.count !== 'all' && pool.length < config.count ? `（条件に合う問題が${pool.length}問のため）` : '';
+        note.textContent = `${n}問 を出題します${short}` + (validSession() ? ' ※ 途中の挑戦は新しい挑戦に置き換わります' : '');
         note.classList.remove('is-empty');
         btn.disabled = false;
       }
@@ -337,26 +360,28 @@
       const config = readConfig();
       const ids = pickQuestions(config);
       if (!ids.length) { updatePoolNote(); return; }
-      if (validSession()) {
-        // 新しく始める場合、途中の記録は置き換える
-        Store.state.session = null;
-      }
+      Store.state.session = null;
       startSession(ids, config);
     });
     updatePoolNote();
 
-    const resumeCard = $('#resume-card');
-    if (resumeCard) {
-      resumeCard.addEventListener('click', e => {
-        const action = e.target.closest('[data-action]');
-        if (!action) return;
-        const a = action.dataset.action;
-        if (a === 'resume') resumeSession();
-        if (a === 'discard') { $('#discard-confirm').hidden = false; $('[data-action="discard-no"]').focus(); }
-        if (a === 'discard-no') { $('#discard-confirm').hidden = true; }
-        if (a === 'discard-yes') { Store.state.session = null; Store.save(); toast('途中の記録を破棄しました'); renderHome(); }
-      });
-    }
+    const cards = [$('#resume-card'), $('#practice-card')].filter(Boolean);
+    cards.forEach(card => card.addEventListener('click', e => {
+      const action = e.target.closest('[data-action]');
+      if (!action) return;
+      const a = action.dataset.action;
+      if (a === 'resume') resumeSession();
+      if (a === 'discard') { $('#discard-confirm').hidden = false; $('[data-action="discard-no"]').focus(); }
+      if (a === 'discard-no') { $('#discard-confirm').hidden = true; }
+      if (a === 'discard-yes') { Store.state.session = null; Store.save(); toast('途中の記録を破棄しました'); renderHome(); }
+      if (a === 'practice') {
+        const ids = practiceRequest.slice();
+        practiceRequest = null;
+        Store.state.session = null;
+        startSession(ids, { source: 'custom', ids, count: 'all', type: 'mix', category: 'all', random: false });
+      }
+      if (a === 'practice-cancel') { practiceRequest = null; renderHome(); }
+    }));
   }
 
   // ================================================================ 挑戦（セッション）
@@ -410,8 +435,20 @@
     const s = validSession();
     if (!s) { toast('前回の続きを読み込めませんでした。新しく始めてください。'); renderHome(); return; }
     clockSince = Date.now();
-    if (s.phase === 'answered') { goNext(); return; }
     renderQuestion();
+    if (s.phase === 'answered') restoreAnswered(s);
+  }
+
+  /** 回答後に中断した問題は、解説を表示した状態で再開する */
+  function restoreAnswered(s) {
+    const q = answerUI.question;
+    const r = s.results[s.results.length - 1];
+    if (!r || r.id !== q.id) { goNext(); return; }
+    const combos = (r.combos || []).map(t => KeyCombo.parseComboText(t).combos[0]).filter(Boolean);
+    renderFeedback(q, { correct: r.correct, given: r.given, selected: r.selected, combos: combos.length ? combos : null },
+      { base: r.base || r.points, bonus: r.bonus || 0, earned: r.points, weakStatus: r.weakStatus || null });
+    const fill = $('#progress-fill');
+    if (fill) fill.style.setProperty('--w', (s.results.length / s.queue.length * 100).toFixed(2) + '%');
   }
 
   function commitClock() {
@@ -422,11 +459,16 @@
     }
   }
 
-  function quitSession() {
+  /** 問題画面から離れるとき（ホームへ戻る・メニュー移動）に進み具合を保存する */
+  function leaveQuiz() {
     commitClock();
     clockSince = null;
     Store.save();
-    toast('途中まで保存しました。「前回の続きから」で再開できます');
+    toast('途中まで保存しました。ホームの「続きから再開」で戻れます');
+  }
+
+  function quitSession() {
+    leaveQuiz();
     renderHome();
   }
 
@@ -438,17 +480,16 @@
     return `
       <div class="hud">
         <div class="hud-row">
-          <button class="btn ghost small" data-action="quit" type="button">中断する</button>
-          <p class="q-count" aria-label="${s.queue.length}問中 ${s.index + 1}問目"><b>${s.index + 1}</b><span>/ ${s.queue.length}</span></p>
-          <span class="hud-spacer"></span>
+          <button class="btn ghost small back-btn" data-action="quit" type="button"><span aria-hidden="true">←</span> ホームへ戻る</button>
+          <p class="q-count" aria-label="全${s.queue.length}問中 ${s.index + 1}問目">第<b>${s.index + 1}</b>問<span>／${s.queue.length}</span></p>
         </div>
         <div class="progress" role="progressbar" aria-label="進み具合" aria-valuemin="0" aria-valuemax="${s.queue.length}" aria-valuenow="${answeredCount}">
           <span id="progress-fill" style="--w:${(prevRatio * 100).toFixed(2)}%"></span>
         </div>
         <dl class="hud-stats">
-          <div class="stat"><dt>SCORE</dt><dd id="hud-score">${fmt(s.score)}</dd></div>
-          <div class="stat stat-combo ${s.combo >= 2 ? 'is-hot' : ''}" id="hud-combo-box"><dt>COMBO</dt><dd id="hud-combo">${s.combo}</dd></div>
-          <div class="stat"><dt>LEVEL</dt><dd id="hud-level">${lv}</dd></div>
+          <div class="stat"><dt>得点</dt><dd id="hud-score">${fmt(s.score)}</dd></div>
+          <div class="stat stat-combo ${s.combo >= 2 ? 'is-hot' : ''}" id="hud-combo-box"><dt>コンボ</dt><dd id="hud-combo">${s.combo}</dd></div>
+          <div class="stat"><dt>レベル</dt><dd id="hud-level">${lv}</dd></div>
         </dl>
       </div>`;
   }
@@ -467,7 +508,7 @@
           <div class="q-meta">
             <span class="chip">${esc(q.category)}</span>
             <span class="chip diff diff-${q.difficulty.toLowerCase()}">${DIFF_LABEL[q.difficulty]} ・ ${points}pt</span>
-            <span class="chip plain">${TYPE_LABEL[q.type]}${rec && rec.weak ? ' ・ <span class="weak-mark">苦手</span>' : ''}</span>
+            <span class="chip plain">${TYPE_LABEL[q.type]}</span>${rec && rec.weak ? '<span class="chip weak">苦手</span>' : ''}
             <button class="fav-btn" type="button" data-action="fav" aria-pressed="${fav}"><span aria-hidden="true">${fav ? '★' : '☆'}</span> お気に入り</button>
           </div>
           <h1 class="q-text" id="q-text" tabindex="-1">${esc(q.question)}</h1>
@@ -475,7 +516,7 @@
           <p class="form-error" id="form-error" role="alert"></p>
           <div class="q-actions" id="q-actions">
             <button class="btn primary xl" type="button" id="submit-btn" data-action="submit">回答する</button>
-            ${!TOUCH_FIRST ? `<p class="kbd-hint">${q.type === 'choice' ? '<kbd>1</kbd>〜<kbd>4</kbd> で選択、<kbd>Enter</kbd> で回答' : '<kbd>Enter</kbd> で回答'}</p>` : ''}
+            ${!TOUCH_FIRST ? `<p class="kbd-hint">${q.type === 'choice' ? '<kbd>1</kbd>〜<kbd>4</kbd> で選択 ／ <kbd>Enter</kbd> で回答' : '<kbd>Enter</kbd> で回答'}</p>` : ''}
           </div>
         </article>
         <div id="feedback"></div>
@@ -765,7 +806,11 @@
     profile.totalAnswered += 1;
     if (result.correct) profile.correct += 1; else profile.wrong += 1;
     const weakStatus = Store.recordAnswer(q.id, result.correct, result.given);
-    s.results.push({ id: q.id, correct: result.correct, given: result.given, points: earned, bonus });
+    s.results.push({
+      id: q.id, correct: result.correct, given: result.given, points: earned, base, bonus, weakStatus,
+      selected: result.selected == null ? null : result.selected,
+      combos: result.combos ? result.combos.map(KeyCombo.comboToString) : null
+    });
     s.phase = 'answered';
     commitClock();
     Store.save();
@@ -800,7 +845,7 @@
   function comboBurst(combo) {
     const el = document.createElement('div');
     el.className = 'combo-burst';
-    el.innerHTML = `<b>${combo}</b><span>COMBO</span>`;
+    el.innerHTML = `<b>${combo}</b><span>コンボ</span>`;
     $('#fx').appendChild(el);
     announce(`${combo}コンボ！`);
     setTimeout(() => el.remove(), 1400);
@@ -810,8 +855,8 @@
     const overlay = $('#overlay');
     overlay.innerHTML = `
       <div class="levelup" role="dialog" aria-modal="true" aria-labelledby="lu-title">
-        <p class="lu-kicker">LEVEL UP</p>
-        <p class="lu-level" id="lu-title"><small>LEVEL</small><b>${level}</b></p>
+        <p class="lu-kicker">${Game.levelTitle(level).endsWith('段') || level > 20 ? '昇段' : '昇級'}</p>
+        <p class="lu-level" id="lu-title"><small>レベル</small><b>${level}</b></p>
         <p class="lu-title">${esc(Game.levelTitle(level))}</p>
         <button class="btn primary" type="button" data-action="close-overlay">続ける</button>
       </div>`;
@@ -846,7 +891,7 @@
       $$('.choice').forEach((b, i) => {
         b.disabled = true;
         const state = b.querySelector('.choice-state');
-        if (i === q.answer) { b.classList.add('is-answer'); state.innerHTML = '<span class="pill ok">✓ 正解</span>'; }
+        if (i === q.answer) { b.classList.add('is-answer'); state.innerHTML = '<span class="pill ok">○ 正解</span>'; }
         else if (i === result.selected) { b.classList.add('is-miss'); state.innerHTML = '<span class="pill ng">✕ あなたの回答</span>'; }
         else b.classList.add('is-dim');
       });
@@ -892,7 +937,7 @@
     $('#feedback').innerHTML = `
       <section class="feedback ${result.correct ? 'ok' : 'ng'}" aria-labelledby="verdict">
         <div class="verdict">
-          <span class="verdict-mark" aria-hidden="true">${result.correct ? '○' : '✕'}</span>
+          <span class="stamp ${result.correct ? 'ok' : 'ng'}" aria-hidden="true">${result.correct ? '正解' : '不正解'}</span>
           <div>
             <h2 id="verdict">${result.correct ? '正解！' : '不正解'}</h2>
             <p class="verdict-pts">${pointsLine}</p>
@@ -956,6 +1001,7 @@
       at: Date.now(), total, correct, wrong: total - correct, accuracy, score: s.score, maxCombo: s.maxCombo,
       timeMs: s.elapsedMs, perfectBonus, levelBefore: s.startLevel, levelAfter: Game.levelFromXP(profile.totalXP),
       queue: s.queue.slice(), wrongIds: s.results.filter(r => !r.correct).map(r => r.id),
+      results: s.results.slice(),
       config: s.config
     };
     Store.addHistory(entry);
@@ -964,30 +1010,72 @@
     renderResult(entry, { bests: firstTime ? [] : bests, firstTime });
   }
 
+  /** 結果画面の1問分：正誤・回答・正解・解説 */
+  function reviewItemHTML(r, index) {
+    const q = Bank.byId.get(r.id);
+    if (!q) return '';
+    let yours;
+    let correct;
+    if (q.type === 'choice') {
+      yours = r.selected != null && q.choices[r.selected] ? `${LETTERS[r.selected]}. ${esc(q.choices[r.selected].text)}` : esc(r.given);
+      correct = `${LETTERS[q.answer]}. ${esc(q.choices[q.answer].text)}`;
+    } else if (q.inputMode === 'keys') {
+      const combos = (r.combos || []).map(t => KeyCombo.parseComboText(t).combos[0]).filter(Boolean);
+      yours = combos.length ? combos.map(keycaps).join('<span class="or">/</span>') : esc(r.given);
+      correct = acceptedKeycaps(q);
+    } else {
+      yours = esc(r.given);
+      correct = esc(q.answer);
+    }
+    const choiceDetail = q.type === 'choice' ? `
+      <details class="rv-choices">
+        <summary>選択肢ごとの解説を見る</summary>
+        <ul class="choice-exps">${q.choices.map((c, i) => `
+          <li class="${i === q.answer ? 'is-answer' : ''}">
+            <span class="choice-letter" aria-hidden="true">${LETTERS[i]}</span>
+            <div><p class="ce-text">${esc(c.text)}${i === q.answer ? ' <span class="pill ok">正解</span>' : ''}${i === r.selected && i !== q.answer ? ' <span class="pill ng">あなたの回答</span>' : ''}</p>
+            <p class="ce-exp">${esc(c.explanation || (i === q.answer ? q.explanation : ''))}</p></div>
+          </li>`).join('')}</ul>
+      </details>` : '';
+    return `
+      <li class="rv ${r.correct ? 'ok' : 'ng'}" data-result="${r.correct ? 'ok' : 'ng'}">
+        <div class="rv-head">
+          <span class="rv-mark">${r.correct ? '○ 正解' : '✕ 不正解'}</span>
+          <span class="rv-no">第${index + 1}問</span>
+          <span class="chip">${esc(q.category)}</span>
+          <span class="chip plain">${TYPE_LABEL[q.type]}</span>
+          <span class="rv-pts">${r.correct ? '+' + fmt(r.points) + ' pt' : '0 pt'}</span>
+        </div>
+        <p class="rv-q">${esc(q.question)}</p>
+        <dl class="rv-ans">
+          <div class="${r.correct ? 'ok' : 'ng'}"><dt>あなたの回答</dt><dd>${yours}</dd></div>
+          <div class="ok"><dt>正解</dt><dd>${correct}</dd></div>
+        </dl>
+        <p class="rv-exp"><span class="rv-label">解説</span>${esc(q.explanation)}</p>
+        ${q.supplement ? `<p class="supplement">${esc(q.supplement)}</p>` : ''}
+        ${choiceDetail}
+      </li>`;
+  }
+
   function renderResult(entry, flags) {
     const lvUp = entry.levelAfter > entry.levelBefore;
-    const circumference = 2 * Math.PI * 54;
     const weakCount = Object.values(Store.state.questions).filter(r => r.weak).length;
     const favCount = Object.values(Store.state.questions).filter(r => r.favorite).length;
+    const results = entry.results || [];
     const html = `
       <section class="result">
         <div class="result-hero">
-          <div class="ring" role="img" aria-label="正答率 ${entry.accuracy}%">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="ring-bg" cx="60" cy="60" r="54"></circle>
-              <circle class="ring-fg ${entry.accuracy >= 80 ? 'good' : entry.accuracy >= 50 ? 'mid' : 'low'}" cx="60" cy="60" r="54"
-                style="stroke-dasharray:${circumference.toFixed(1)};stroke-dashoffset:${circumference.toFixed(1)};--target:${(circumference * (1 - entry.accuracy / 100)).toFixed(1)}"></circle>
-            </svg>
-            <p class="ring-num"><b id="result-score">0</b><span>点</span></p>
+          <div class="score-stamp ${entry.accuracy >= 80 ? 'good' : entry.accuracy >= 50 ? 'mid' : 'low'}" role="img" aria-label="${entry.accuracy}点">
+            <b id="result-score">0</b><span>点</span>
           </div>
           <div class="result-copy">
-            <p class="eyebrow">今回の結果</p>
+            <p class="kicker">今回の結果</p>
             <h1>${esc(Game.resultMessage(entry.accuracy))}</h1>
-            <p class="result-sub">${entry.total}問中 <b>${entry.correct}問</b> 正解 ・ <b>${fmt(entry.score)} pt</b> 獲得</p>
+            <p class="result-sub">${entry.total}問中 <b>${entry.correct}問</b> 正解 ／ <b>${fmt(entry.score)} pt</b> 獲得</p>
             <div class="badges">
-              ${flags.firstTime ? '<span class="badge best">初記録！</span>' : ''}
-              ${flags.bests.map(b => `<span class="badge best">自己ベスト更新！ ${esc(b)}</span>`).join('')}
-              ${lvUp ? `<span class="badge level">LEVEL UP ${entry.levelBefore} → ${entry.levelAfter}</span>` : ''}
+              ${flags.firstTime ? '<span class="badge best">初記録</span>' : ''}
+              ${flags.bests.map(b => `<span class="badge best">自己ベスト更新 ${esc(b)}</span>`).join('')}
+              ${lvUp ? `<span class="badge level">レベル ${entry.levelBefore} → ${entry.levelAfter}（${esc(Game.levelTitle(entry.levelAfter))}）</span>` : ''}
               ${entry.perfectBonus ? `<span class="badge perfect">全問正解ボーナス +${entry.perfectBonus}</span>` : ''}
             </div>
           </div>
@@ -1011,23 +1099,35 @@
             <button class="btn outline" data-action="review-weak" ${weakCount ? '' : 'disabled'}>苦手問題を復習（${weakCount}）</button>
             <button class="btn outline" data-action="review-fav" ${favCount ? '' : 'disabled'}>お気に入りを復習（${favCount}）</button>
           </div>
-          <button class="btn ghost" data-action="home">トップページへ戻る</button>
+          <div class="action-grid">
+            <button class="btn ghost" data-action="home">トップページへ戻る</button>
+            <a class="btn ghost" href="shortcuts.html">ショートカット一覧で確認する</a>
+          </div>
         </div>
 
-        ${entry.wrongIds.length ? `
-        <section class="wrong-list" aria-labelledby="wrong-h">
-          <h2 id="wrong-h">間違えた問題</h2>
-          <ul>${entry.wrongIds.map(id => { const q = Bank.byId.get(id); return q ? `<li><span class="chip">${esc(q.category)}</span><p>${esc(q.question)}</p><p class="wl-answer">正解：${q.type === 'choice' ? esc(q.choices[q.answer].text) : q.inputMode === 'keys' ? acceptedKeycaps(q) : esc(q.answer)}</p></li>` : ''; }).join('')}</ul>
+        ${results.length ? `
+        <section class="review" aria-labelledby="review-h">
+          <div class="review-head">
+            <h2 class="sec-h" id="review-h">答え合わせ</h2>
+            <div class="filter-tabs small" role="tablist" aria-label="表示する問題">
+              <button type="button" role="tab" class="filter-tab" data-review="all" aria-selected="true">すべて<span>${results.length}</span></button>
+              <button type="button" role="tab" class="filter-tab" data-review="ng" aria-selected="false">不正解<span>${entry.wrong}</span></button>
+              <button type="button" role="tab" class="filter-tab" data-review="ok" aria-selected="false">正解<span>${entry.correct}</span></button>
+            </div>
+          </div>
+          <ol class="review-list">${results.map(reviewItemHTML).join('')}</ol>
         </section>` : ''}
       </section>`;
     setView('result', html);
     countUp($('#result-score'), 0, entry.accuracy, 1100);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const fg = $('.ring-fg');
-      if (fg) fg.style.strokeDashoffset = fg.style.getPropertyValue('--target');
+    if (flags.bests.length || entry.accuracy === 100) setTimeout(() => confetti(60), 700);
+    else if (lvUp) setTimeout(() => confetti(30), 700);
+
+    $$('[data-review]').forEach(tab => tab.addEventListener('click', () => {
+      const mode = tab.dataset.review;
+      $$('[data-review]').forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+      $$('.rv').forEach(li => { li.hidden = mode !== 'all' && li.dataset.result !== mode; });
     }));
-    if (flags.bests.length || entry.accuracy === 100) setTimeout(() => confetti(60), 600);
-    else if (lvUp) setTimeout(() => confetti(30), 600);
 
     $('.result-actions').addEventListener('click', e => {
       const btn = e.target.closest('[data-action]');
@@ -1093,7 +1193,7 @@
     const html = `
       <section class="list">
         <header class="page-head">
-          <p class="eyebrow">問題一覧</p>
+          <p class="kicker">問題一覧</p>
           <h1>苦手とお気に入りを管理</h1>
           <p class="lead">☆ を押すとお気に入りに登録できます。表示中の問題から、そのまま出題できます。</p>
         </header>
@@ -1156,16 +1256,16 @@
     const html = `
       <section class="records">
         <header class="page-head">
-          <p class="eyebrow">学習の記録</p>
+          <p class="kicker">学習の記録</p>
           <h1>自分の記録を更新しよう</h1>
           <p class="lead">記録はこのブラウザに保存されます。${Store.memoryOnly ? '<strong>現在は保存できない状態のため、画面を閉じると記録は消えます。</strong>' : ''}</p>
         </header>
 
         <div class="best-grid">
-          <div class="best"><p>最高ポイント</p><b>${fmt(p.bestScore)}<small>pt</small></b></div>
-          <div class="best"><p>最大コンボ</p><b>${fmt(p.maxCombo)}</b></div>
-          <div class="best"><p>最高正答率</p><b>${p.bestAccuracy == null ? '—' : p.bestAccuracy + '<small>%</small>'}</b></div>
-          <div class="best"><p>最速クリア</p><b class="small-num">${fastestKeys.length ? fastestKeys.map(k => `<span>${k}問 ${formatDuration(p.fastest[k])}</span>`).join('') : '—'}</b></div>
+          <div class="best-cell"><p>最高ポイント</p><b>${fmt(p.bestScore)}<small>pt</small></b></div>
+          <div class="best-cell"><p>最大コンボ</p><b>${fmt(p.maxCombo)}</b></div>
+          <div class="best-cell"><p>最高正答率</p><b>${p.bestAccuracy == null ? '—' : p.bestAccuracy + '<small>%</small>'}</b></div>
+          <div class="best-cell"><p>最速クリア</p><b class="small-num">${fastestKeys.length ? fastestKeys.map(k => `<span>${k}問 ${formatDuration(p.fastest[k])}</span>`).join('') : '—'}</b></div>
         </div>
         <p class="note">最高正答率は5問以上の回、最速クリアは正答率80%以上の回が対象です。</p>
 
@@ -1212,7 +1312,7 @@
   function renderFatal(message) {
     setView('error', `
       <section class="fatal">
-        <p class="eyebrow">読み込みエラー</p>
+        <p class="kicker">読み込みエラー</p>
         <h1>問題を表示できませんでした</h1>
         <p>${esc(message)}</p>
         <p class="note">ファイル構成が正しいか（index.html と同じ場所に data フォルダがあるか）を確認してから、ページを再読み込みしてください。</p>
@@ -1246,16 +1346,29 @@
 
   // ================================================================ 起動
   function navigate(name) {
+    if (currentView === 'quiz' && Store.state.session) leaveQuiz();
     if (name === 'home') renderHome();
     if (name === 'list') renderList();
     if (name === 'records') renderRecords();
   }
 
+  /** shortcuts.html の「道場で練習」から来たとき：#practice.K-001.C-001 */
+  function readPracticeHash() {
+    const m = (location.hash || '').match(/^#practice\.([A-Za-z0-9.\-_]+)$/);
+    if (!m) return;
+    const ids = m[1].split('.').filter(id => Bank.byId.has(id));
+    practiceRequest = ids.length ? ids : null;
+    if (!ids.length) toast('練習する問題が見つかりませんでした。');
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* 失敗しても続行 */ }
+  }
+
   function init() {
     Store.load();
     $$('.nav-btn').forEach(b => b.addEventListener('click', () => navigate(b.dataset.nav)));
+    $$('.site-switch a, a[href="shortcuts.html"]').forEach(a => a.addEventListener('click', () => { if (currentView === 'quiz' && Store.state.session) { commitClock(); clockSince = null; Store.save(); } }));
     document.addEventListener('keydown', onGlobalKeydown);
     const persist = () => { if (currentView === 'quiz') { commitClock(); Store.save(); } };
+    window.addEventListener('hashchange', () => { readPracticeHash(); if (practiceRequest && currentView !== 'quiz') renderHome(); });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') { persist(); clockSince = null; }
       else if (currentView === 'quiz' && Store.state.session) clockSince = Date.now();
@@ -1264,6 +1377,7 @@
 
     if (!window.QUIZ_DATA) { renderFatal('問題データ（data/questions.js）が見つかりませんでした。'); return; }
     if (!loadBank()) { renderFatal('問題データに表示できる問題がありませんでした。問題の書き方を確認してください。'); return; }
+    readPracticeHash();
     renderHome();
     flushNotices();
     if (Bank.skipped) toast(`問題データの一部に不備があったため、${Bank.skipped}問を除外しました`);

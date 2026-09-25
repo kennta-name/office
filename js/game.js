@@ -14,11 +14,8 @@
   /** 全問正解ボーナス（5問以上のとき） */
   const PERFECT_BONUS = 300;
 
-  /** レベルごとの称号（そのレベル以上で表示） */
-  const LEVEL_TITLES = [
-    [1, 'ビギナー'], [3, 'ルーキー'], [5, 'アシスタント'], [8, 'エキスパート'],
-    [12, 'プロフェッショナル'], [16, 'マスター'], [20, 'レジェンド']
-  ];
+  /** レベルに対応する段位（道場らしく 十級 → 一級 → 初段 → … → 十段 → 名人） */
+  const KANJI_NUM = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
 
   function basePoints(difficulty, table) {
     const points = table || DEFAULT_POINTS;
@@ -50,9 +47,10 @@
   }
 
   function levelTitle(level) {
-    let title = LEVEL_TITLES[0][1];
-    LEVEL_TITLES.forEach(([min, name]) => { if (level >= min) title = name; });
-    return title;
+    if (level <= 10) return KANJI_NUM[11 - level] + '級';
+    if (level === 11) return '初段';
+    if (level <= 20) return KANJI_NUM[level - 10] + '段';
+    return '名人';
   }
 
   function isComboMilestone(combo) {

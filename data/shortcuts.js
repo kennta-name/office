@@ -1,6 +1,7 @@
 /**
  * ショートカット一覧データ（shortcuts.html で使用）
  * keys     : 押すキー。別の押し方がある場合は配列に並べる（例 ["F5", "Ctrl+G"]）
+ *            「cmd」のようにかぎかっこで囲んだ部分は「文字を入力する」操作として表示
  *            "Alt>F" は「Alt を押して離してから F」、"Shift+ドラッグ" のようにマウス操作も書ける
  * level    : 重要度 3=最優先 / 2=慣れたら / 1=必要になったら
  * practice : 道場で練習できる問題ID（data/questions.js の id）
@@ -349,6 +350,59 @@ window.SHORTCUT_DATA = {
       "practice": []
     },
     {
+      "id": "S-074",
+      "app": "共通",
+      "keys": [
+        "Alt"
+      ],
+      "name": "キーヒントを表示",
+      "description": "Alt キーを1回押すと、リボンの各ボタンにアルファベットが表示されます。表示された文字を順に押すと、マウスなしで操作できます。",
+      "usage": "マウスを使わずにリボンの機能を呼び出すとき",
+      "level": 1,
+      "practice": []
+    },
+    {
+      "id": "S-075",
+      "app": "共通",
+      "keys": [
+        "Alt+数字"
+      ],
+      "name": "クイックアクセスツールバーのボタンを実行",
+      "description": "クイックアクセスツールバーに登録したボタンを、Alt と表示された番号で実行します。",
+      "usage": "よく使う機能を自分専用のショートカットにしたいとき",
+      "level": 1,
+      "practice": []
+    },
+    {
+      "id": "S-077",
+      "app": "Excel",
+      "keys": [
+        "Ctrl+F"
+      ],
+      "name": "検索",
+      "description": "大量のデータから文字や数値を探します。",
+      "usage": "何千行もある表から目的のデータを探すとき",
+      "level": 3,
+      "practice": [
+        "C-014",
+        "K-007"
+      ]
+    },
+    {
+      "id": "S-078",
+      "app": "Excel",
+      "keys": [
+        "Ctrl+H"
+      ],
+      "name": "検索と置換",
+      "description": "文字をまとめて別の文字に置き換えます。",
+      "usage": "誤字の一括修正や表記ゆれの統一",
+      "level": 3,
+      "practice": [
+        "K-008"
+      ]
+    },
+    {
       "id": "S-025",
       "app": "Excel",
       "keys": [
@@ -362,6 +416,18 @@ window.SHORTCUT_DATA = {
         "C-004",
         "K-021"
       ]
+    },
+    {
+      "id": "S-076",
+      "app": "Excel",
+      "keys": [
+        "Ctrl+Shift+Arrow"
+      ],
+      "name": "データの端まで選択",
+      "description": "今のセルからデータの端までをまとめて選択します。",
+      "usage": "列全体・表全体を正確に選ぶとき",
+      "level": 3,
+      "practice": []
     },
     {
       "id": "S-026",
@@ -752,6 +818,18 @@ window.SHORTCUT_DATA = {
       "practice": []
     },
     {
+      "id": "S-080",
+      "app": "PowerPoint",
+      "keys": [
+        "Ctrl+ドラッグ"
+      ],
+      "name": "ガイド線を追加",
+      "description": "［表示］→「ガイド」を表示した状態で、Ctrl を押しながらガイドをドラッグすると線を追加できます。",
+      "usage": "全スライドで同じ位置に要素をそろえるとき",
+      "level": 1,
+      "practice": []
+    },
+    {
       "id": "S-055",
       "app": "PowerPoint",
       "keys": [
@@ -762,6 +840,21 @@ window.SHORTCUT_DATA = {
       "usage": "タイトルから本文へすぐ移るとき",
       "level": 1,
       "practice": []
+    },
+    {
+      "id": "S-079",
+      "app": "PowerPoint",
+      "keys": [
+        "Ctrl+Space"
+      ],
+      "name": "文字書式の解除",
+      "description": "選択した文字の書式を標準に戻します。",
+      "usage": "おかしくなった文字の見た目をリセットするとき",
+      "level": 1,
+      "practice": [
+        "C-015",
+        "K-030"
+      ]
     },
     {
       "id": "S-056",
@@ -905,6 +998,54 @@ window.SHORTCUT_DATA = {
       "practice": []
     },
     {
+      "id": "S-082",
+      "app": "Windows",
+      "keys": [
+        "Win+R>「cmd」>Enter"
+      ],
+      "name": "コマンドプロンプトを起動",
+      "description": "Win+R の画面で「cmd」と入力して Enter を押します。",
+      "usage": "ping や ipconfig でネットワークを確認するとき",
+      "level": 1,
+      "practice": []
+    },
+    {
+      "id": "S-083",
+      "app": "Windows",
+      "keys": [
+        "Win+R>「powershell」>Enter"
+      ],
+      "name": "PowerShell を起動",
+      "description": "Win+R の画面で「powershell」と入力して Enter を押します。cmd より高機能なコマンド環境です。",
+      "usage": "複数の操作を自動化するスクリプトを作るとき",
+      "level": 1,
+      "practice": []
+    },
+    {
+      "id": "S-084",
+      "app": "Windows",
+      "keys": [
+        "Win+R>「mstsc」>Enter"
+      ],
+      "name": "リモートデスクトップ接続を起動",
+      "description": "Win+R の画面で「mstsc」と入力して Enter を押します。",
+      "usage": "離れた場所の PC やサーバーに接続して操作するとき",
+      "level": 1,
+      "practice": []
+    },
+    {
+      "id": "S-085",
+      "app": "Windows",
+      "keys": [
+        "Win+R>「regedit」>Enter"
+      ],
+      "name": "レジストリエディターを起動",
+      "description": "Win+R の画面で「regedit」と入力して Enter を押します。Windows の内部設定を直接編集する画面です。",
+      "usage": "注意：誤った変更で PC が起動しなくなることがあります。手順書や管理者の指示があるときだけ開く",
+      "level": 1,
+      "practice": []
+    },
+    {
       "id": "S-066",
       "app": "Windows",
       "keys": [
@@ -926,6 +1067,18 @@ window.SHORTCUT_DATA = {
       "description": "選択したファイルの名前を変更します。",
       "usage": "ファイル名をすばやく直すとき",
       "level": 2,
+      "practice": []
+    },
+    {
+      "id": "S-081",
+      "app": "Windows",
+      "keys": [
+        "F5"
+      ],
+      "name": "表示の更新（エクスプローラー）",
+      "description": "エクスプローラーの表示を最新の状態にします。",
+      "usage": "ファイルを保存したのに一覧に出てこないとき",
+      "level": 1,
       "practice": []
     },
     {
