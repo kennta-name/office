@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ショートカット一覧</title>
+<meta name="description" content="Office（Excel・Word・PowerPoint）とWindows、ブラウザのよく使うショートカットキー一覧">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@600;800&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-view="shortcuts" class="sc-body">
+<a class="skip-link" href="#sc-main">本文へ移動</a>
+<header class="app-header">
+  <div class="app-header-inner">
+    <a class="brand" href="index.html" aria-label="Officeキー道場 ホームへ">
+      <span class="brand-mark" aria-hidden="true">道</span>
+      <span class="brand-name">Officeキー道場</span>
+    </a>
+    <nav class="site-switch" aria-label="サイトの切り替え">
+      <a href="index.html">キー道場</a>
+      <a href="shortcuts.html" aria-current="page">ショートカット一覧</a>
+    </nav>
+  </div>
+</header>
+
+<main id="sc-main" class="view sc-page" tabindex="-1">
+  <header class="page-head">
+    <p class="kicker">ショートカット一覧</p>
+    <h1>よく使うショートカット <span class="num-count" id="sc-total"></span></h1>
+    <p class="lead">Excel・Word・PowerPoint・Windows・ブラウザのショートカットをまとめました。キーを押して探すこともできます。覚えたものにチェックを入れて、道場で腕試しをしましょう。</p>
+  </header>
+
+  <section class="sc-tools" aria-label="絞り込み">
+    <div class="sc-search-row">
+      <label class="field" for="sc-search"><span>ことばで探す</span>
+        <input id="sc-search" type="search" placeholder="例：コピー、保存、Ctrl+S" autocomplete="off">
+      </label>
+      <div class="field">
+        <span id="sc-capture-label">キーを押して探す</span>
+        <div class="sc-capture" id="sc-capture" tabindex="0" role="textbox" aria-labelledby="sc-capture-label" aria-describedby="sc-capture-help">
+          <span class="placeholder" id="sc-capture-display">ここをクリックしてキーを押す</span>
+          <button type="button" class="clear-btn" id="sc-clear" hidden>解除</button>
+        </div>
+      </div>
+    </div>
+    <p class="help" id="sc-capture-help">キー入力欄では <kbd>Backspace</kbd> で解除できます。Windows キーを使う操作などは OS が先に反応するため、ことばで探してください。</p>
+    <div class="filter-tabs" role="tablist" aria-label="アプリで絞り込む" id="sc-apps"></div>
+    <div class="sc-toggles">
+      <label class="switch"><input type="checkbox" id="sc-top"><span class="switch-ui" aria-hidden="true"></span><span>最優先だけ表示</span></label>
+      <label class="switch"><input type="checkbox" id="sc-unlearned"><span class="switch-ui" aria-hidden="true"></span><span>まだ覚えていないものだけ</span></label>
+      <p class="sc-progress" id="sc-progress" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <div id="sc-list" aria-live="polite"></div>
+
+  <aside class="sc-cta">
+    <div>
+      <p class="kicker">腕試し</p>
+      <h2>覚えたら、キー道場で実際に押してみましょう</h2>
+      <p>入力式の問題では、本物のキー操作で回答します。正解するとポイントとコンボが貯まります。</p>
+    </div>
+    <a class="btn primary" href="index.html">キー道場へ<span aria-hidden="true"> →</span></a>
+  </aside>
+
+  <section class="sc-notes" aria-label="注意">
+    <h2 class="sec-h">覚えておきたい注意</h2>
+    <dl>
+      <div><dt>F5 はアプリで働きが違う</dt><dd>ブラウザでは更新、Excel ではジャンプ、PowerPoint ではスライドショー開始です。</dd></div>
+      <div><dt>Mac の場合</dt><dd>多くの操作で Ctrl の代わりに ⌘（Command）を使います。</dd></div>
+      <div><dt>スクリーンショットの共有</dt><dd>共有する前に、パスワードや個人情報が写り込んでいないか確認しましょう。</dd></div>
+    </dl>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="data/shortcuts.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/shortcuts-page.js"></script>
+</body>
+</html>
